@@ -85,6 +85,9 @@ static size_t	parse_list(struct bcode_list *, const uint8_t *, size_t);
 static size_t	parse_dictionary(struct bcode_dictionary *, const uint8_t *,
 		    size_t);
 static size_t	parse_internal(struct bcode *, const uint8_t *, size_t);
+static void	free_internal(struct bcode *);
+static void	print_string(const struct bcode_string *, FILE *);
+static void	print_internal(const struct bcode *, FILE *, size_t);
 
 
 static int
