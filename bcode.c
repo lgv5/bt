@@ -58,11 +58,11 @@ struct bcode_dictionary {
 struct bcode {
 	enum bcode_type	type;
 	union {
-		struct bcode_string	s;
-		int64_t			i;
-		struct bcode_list	l;
-		struct bcode_dictionary	d;
-	}		value;
+		struct bcode_string	string;
+		int64_t			integer;
+		struct bcode_list	list;
+		struct bcode_dictionary	dictionary;
+	};
 };
 
 /*
@@ -361,26 +361,25 @@ parse_internal(struct bcode *bcode, const uint8_t *dp, size_t sz)
 
 	switch (*dp) {
 	case 'i':
-		n = parse_integer(&bcode->value.i, dp, sz);
+		n = parse_integer(&bcode->integer, dp, sz);
 		if (n > 0)
 			bcode->type = BCODE_INTEGER;
 		break;
 	case 'l':
-		n = parse_list(&bcode->value.l, dp, sz);
+		n = parse_list(&bcode->list, dp, sz);
 		if (n > 0)
 			bcode->type = BCODE_LIST;
 		break;
 	case 'd':
-		n = parse_dictionary(&bcode->value.d, dp, sz);
+		n = parse_dictionary(&bcode->dictionary, dp, sz);
 		if (n > 0) {
-			struct bcode_dictionary	d = bcode->value.d;
-
-			qsort(d.elems, d.sz, sizeof(*d.elems), &kv_cmp);
+			qsort(bcode->dictionary.elems, bcode->dictionary.sz,
+			    sizeof(*bcode->dictionary.elems), &kv_cmp);
 			bcode->type = BCODE_DICTIONARY;
 		}
 		break;
 	default:
-		n = parse_string(&bcode->value.s, dp, sz);
+		n = parse_string(&bcode->string, dp, sz);
 		if (n > 0)
 			bcode->type = BCODE_STRING;
 		break;
@@ -416,21 +415,21 @@ free_internal(struct bcode *bcode)
 
 	switch (bcode->type) {
 	case BCODE_STRING:
-		free(bcode->value.s.data);
+		free(bcode->string.data);
 		break;
 	case BCODE_INTEGER:
 		break;
 	case BCODE_LIST:
-		for (i = 0; i < bcode->value.l.sz; i++)
-			free_internal(&bcode->value.l.elems[i]);
-		free(bcode->value.l.elems);
+		for (i = 0; i < bcode->list.sz; i++)
+			free_internal(&bcode->list.elems[i]);
+		free(bcode->list.elems);
 		break;
 	case BCODE_DICTIONARY:
-		for (i = 0; i < bcode->value.d.sz; i++) {
-			free(bcode->value.d.elems[i].k.data);
-			free_internal(&bcode->value.d.elems[i].v);
+		for (i = 0; i < bcode->dictionary.sz; i++) {
+			free(bcode->dictionary.elems[i].k.data);
+			free_internal(&bcode->dictionary.elems[i].v);
 		}
-		free(bcode->value.d.elems);
+		free(bcode->dictionary.elems);
 		break;
 	default:
 		/* Do nothing. */
@@ -472,20 +471,18 @@ print_internal(const struct bcode *bcode, FILE *fp, size_t lvl)
 
 	switch (bcode->type) {
 	case BCODE_STRING:
-		print_string(&bcode->value.s, fp);
+		print_string(&bcode->string, fp);
 		break;
 	case BCODE_INTEGER:
-		fprintf(fp, "%" PRIi64, bcode->value.i);
+		fprintf(fp, "%" PRIi64, bcode->integer);
 		break;
-	case BCODE_LIST: {
-		struct bcode_list	l = bcode->value.l;
-
+	case BCODE_LIST:
 		fputs("[\n", fp);
 		lvl++;
-		for (i = 0; i < l.sz; i++) {
+		for (i = 0; i < bcode->list.sz; i++) {
 			for (k = 0; k < lvl; k++)
 				fputs("  ", fp);
-			print_internal(&l.elems[i], fp, lvl);
+			print_internal(&bcode->list.elems[i], fp, lvl);
 			fputs(",\n", fp);
 		}
 		lvl--;
@@ -494,18 +491,15 @@ print_internal(const struct bcode *bcode, FILE *fp, size_t lvl)
 		fputc(']', fp);
 
 		break;
-	}
-	case BCODE_DICTIONARY: {
-		struct bcode_dictionary	d = bcode->value.d;
-
+	case BCODE_DICTIONARY:
 		fputs("{\n", fp);
 		lvl++;
-		for (i = 0; i < d.sz; i++) {
+		for (i = 0; i < bcode->dictionary.sz; i++) {
 			for (k = 0; k < lvl; k++)
 				fputs("  ", fp);
-			print_string(&d.elems[i].k, fp);
+			print_string(&bcode->dictionary.elems[i].k, fp);
 			fputs(": ", fp);
-			print_internal(&d.elems[i].v, fp, lvl);
+			print_internal(&bcode->dictionary.elems[i].v, fp, lvl);
 			fputs(",\n", fp);
 		}
 		lvl--;
@@ -514,7 +508,6 @@ print_internal(const struct bcode *bcode, FILE *fp, size_t lvl)
 		fputc('}', fp);
 
 		break;
-	}
 	default:
 		/* Do nothing. */
 		break;
