@@ -522,7 +522,7 @@ print_internal(const struct bcode *bcode, FILE *fp, size_t lvl)
 }
 
 void
-bcode_dump(const struct bcode *bcode, FILE *fp)
+bcode_print(const struct bcode *bcode, FILE *fp)
 {
 	print_internal(bcode, fp, 0);
 	fputc('\n', fp);

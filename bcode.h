@@ -23,4 +23,4 @@ struct bcode;
 
 struct bcode *	bcode_parse(const uint8_t *, size_t);
 void		bcode_free(struct bcode *);
-void		bcode_dump(const struct bcode *, FILE *);
+void		bcode_print(const struct bcode *, FILE *);

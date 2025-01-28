@@ -41,7 +41,7 @@ main(int argc, char *argv[])
 	bcode = bcode_parse(buf, n);
 	if (bcode == NULL)
 		errx(1, "bcode_parse: parse error");
-	bcode_dump(bcode, stdout);
+	bcode_print(bcode, stdout);
 	bcode_free(bcode);
 
 	(void)fclose(fp);
