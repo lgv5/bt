@@ -20,31 +20,70 @@
 
 #include "bcode.h"
 
+#define GROWTH_FACTOR	1024
+
+
+static void
+usage(void)
+{
+	fprintf(stderr, "Usage: %s [torrent-file]\n", getprogname());
+	exit(1);
+}
 
 int
 main(int argc, char *argv[])
 {
 	struct bcode	*bcode;
-	uint8_t		 buf[256 * 1024];
+	uint8_t		*buf, *p;
 	FILE		*fp;
-	size_t		 n;
+	size_t		 n, bufcap, bufsz;
 
-	fp = fopen("/tmp/af24ae3037cfc1ad8226b159103a148fbc81b173.torrent", "r");
-	if (fp == NULL)
-		err(1, "fopen");
-	n = fread(buf, 1, sizeof(buf), fp);
-	if (ferror(fp))
-		err(1, "fread");
-	if (!feof(fp))
-		errx(1, "short read");
+	argc--;
+	argv++;
+	if (argc > 1)
+		usage();
 
-	bcode = bcode_parse(buf, n);
+	if (argc == 1) {
+		fp = fopen(argv[0], "r");
+		if (fp == NULL)
+			err(1, "fopen");
+	} else
+		fp = stdin;
+
+	buf = malloc(GROWTH_FACTOR);
+	if (buf == NULL)
+		err(1, "out of memory");
+	bufcap = GROWTH_FACTOR;
+	bufsz = 0;
+	for (;;) {
+		if (bufsz > bufcap - GROWTH_FACTOR) {
+			if (bufcap > SIZE_MAX / 2)
+				errx(1, "out of memory");
+			p = reallocarray(buf, bufcap * 2, 1);
+			if (p == NULL)
+				err(1, "out of memory");
+			buf = p;
+			bufcap *= 2;
+		}
+
+		n = fread(&buf[bufsz], 1, GROWTH_FACTOR, fp);
+		if (ferror(fp))
+			err(1, "fread");
+
+		bufsz += n;
+		if (feof(fp))
+			break;
+	}
+
+	bcode = bcode_parse(buf, bufsz);
 	if (bcode == NULL)
 		errx(1, "bcode_parse: parse error");
 	bcode_print(bcode, stdout);
 	bcode_free(bcode);
 
-	(void)fclose(fp);
+	free(buf);
+	if (fp != stdin)
+		(void)fclose(fp);
 
 	return 0;
 }
