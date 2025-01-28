@@ -403,12 +403,42 @@ bcode_parse(const uint8_t *dp, size_t sz)
 	return bcode;
 }
 
-void
-bcode_free(struct bcode *bcode)
+static void
+free_internal(struct bcode *bcode)
 {
+	size_t	i;
+
 	if (bcode == NULL)
 		return;
 
+	switch (bcode->type) {
+	case BCODE_STRING:
+		free(bcode->value.s.data);
+		break;
+	case BCODE_INTEGER:
+		break;
+	case BCODE_LIST:
+		for (i = 0; i < bcode->value.l.sz; i++)
+			free_internal(&bcode->value.l.elems[i]);
+		free(bcode->value.l.elems);
+		break;
+	case BCODE_DICTIONARY:
+		for (i = 0; i < bcode->value.d.sz; i++) {
+			free(bcode->value.d.elems[i].k.data);
+			free_internal(&bcode->value.d.elems[i].v);
+		}
+		free(bcode->value.d.elems);
+		break;
+	default:
+		/* Do nothing. */
+		break;
+	}
+}
+
+void
+bcode_free(struct bcode *bcode)
+{
+	free_internal(bcode);
 	free(bcode);
 }
 
