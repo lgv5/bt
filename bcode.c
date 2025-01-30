@@ -337,6 +337,10 @@ parse_dictionary(struct bcode_dictionary *d, const uint8_t *dp, size_t sz)
 		dp += n;
 		consumed += n;
 
+		if (d->sz > 0 &&
+		    kv_cmp(&d->elems[d->sz - 1], &d->elems[d->sz]) >= 0)
+			return 0;
+
 		n = parse_internal(&d->elems[d->sz].v, dp, sz);
 		if (n == 0)
 			return 0;
@@ -372,11 +376,8 @@ parse_internal(struct bcode *bcode, const uint8_t *dp, size_t sz)
 		break;
 	case 'd':
 		n = parse_dictionary(&bcode->dictionary, dp, sz);
-		if (n > 0) {
-			qsort(bcode->dictionary.elems, bcode->dictionary.sz,
-			    sizeof(*bcode->dictionary.elems), &kv_cmp);
+		if (n > 0)
 			bcode->type = BCODE_DICTIONARY;
-		}
 		break;
 	default:
 		n = parse_string(&bcode->string, dp, sz);
