@@ -18,7 +18,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "bcode.h"
+#include "bt.h"
+
 
 #define GROWTH_FACTOR	1024
 

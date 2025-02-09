@@ -18,8 +18,20 @@
 #include <stdint.h>
 
 
+/*
+ * STRUCTS
+ */
+
+
 struct bcode;
 
+
+/*
+ * PROTOTYPES
+ */
+
+
+/* bencode */
 
 struct bcode *	bcode_parse(const uint8_t *, size_t);
 void		bcode_free(struct bcode *);

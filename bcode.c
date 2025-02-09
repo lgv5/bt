@@ -22,7 +22,7 @@
 #include <string.h>
 #include <vis.h>
 
-#include "bcode.h"
+#include "bt.h"
 
 
 #define MIN(a, b)	((a) < (b) ? (a) : (b))
