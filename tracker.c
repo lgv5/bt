@@ -72,12 +72,6 @@ struct udpc_connect_res {
 	uint64_t	connection_id;
 } __packed;
 
-struct udpc_scrape_res {
-	uint32_t	*seeders;
-	uint32_t	*completed;
-	uint32_t	*leechers;
-};
-
 
 static int	tracker_dial(const char *, const char *, int, const char **);
 static int	url_parse(const char *, char **, char **);
