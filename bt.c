@@ -79,7 +79,7 @@ main(int argc, char *argv[])
 	bcode = bcode_parse(buf, bufsz);
 	if (bcode == NULL)
 		errx(1, "bcode_parse: parse error");
-	bcode_print(bcode, stdout);
+	bcode_print(stdout, bcode);
 	bcode_free(bcode);
 
 	free(buf);

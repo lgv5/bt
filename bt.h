@@ -33,6 +33,6 @@ struct bcode;
 
 /* bencode */
 
-struct bcode *	bcode_parse(const uint8_t *, size_t);
-void		bcode_free(struct bcode *);
-void		bcode_print(const struct bcode *, FILE *);
+struct bcode	*bcode_parse(const uint8_t *, size_t);
+void		 bcode_free(struct bcode *);
+void		 bcode_print(FILE *, const struct bcode *);

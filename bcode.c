@@ -86,8 +86,8 @@ static size_t	parse_dictionary(struct bcode_dictionary *, const uint8_t *,
 		    size_t);
 static size_t	parse_internal(struct bcode *, const uint8_t *, size_t);
 static void	free_internal(struct bcode *);
-static void	print_string(const struct bcode_string *, FILE *);
-static void	print_internal(const struct bcode *, FILE *, size_t);
+static void	print_string(FILE *, const struct bcode_string *);
+static void	print_internal(FILE *, const struct bcode *, size_t);
 
 
 static int
@@ -446,7 +446,7 @@ bcode_free(struct bcode *bcode)
 }
 
 static void
-print_string(const struct bcode_string *s, FILE *fp)
+print_string(FILE *fp, const struct bcode_string *s)
 {
 	char	buf[5];
 	size_t	i;
@@ -466,13 +466,13 @@ print_string(const struct bcode_string *s, FILE *fp)
 }
 
 static void
-print_internal(const struct bcode *bcode, FILE *fp, size_t lvl)
+print_internal(FILE *fp, const struct bcode *bcode, size_t lvl)
 {
 	size_t	i, k;
 
 	switch (bcode->type) {
 	case BCODE_STRING:
-		print_string(&bcode->string, fp);
+		print_string(fp, &bcode->string);
 		break;
 	case BCODE_INTEGER:
 		fprintf(fp, "%" PRIi64, bcode->integer);
@@ -483,7 +483,7 @@ print_internal(const struct bcode *bcode, FILE *fp, size_t lvl)
 		for (i = 0; i < bcode->list.sz; i++) {
 			for (k = 0; k < lvl; k++)
 				fputs("  ", fp);
-			print_internal(&bcode->list.elems[i], fp, lvl);
+			print_internal(fp, &bcode->list.elems[i], lvl);
 			fputs(",\n", fp);
 		}
 		lvl--;
@@ -498,9 +498,9 @@ print_internal(const struct bcode *bcode, FILE *fp, size_t lvl)
 		for (i = 0; i < bcode->dictionary.sz; i++) {
 			for (k = 0; k < lvl; k++)
 				fputs("  ", fp);
-			print_string(&bcode->dictionary.elems[i].k, fp);
+			print_string(fp, &bcode->dictionary.elems[i].k);
 			fputs(": ", fp);
-			print_internal(&bcode->dictionary.elems[i].v, fp, lvl);
+			print_internal(fp, &bcode->dictionary.elems[i].v, lvl);
 			fputs(",\n", fp);
 		}
 		lvl--;
@@ -516,8 +516,8 @@ print_internal(const struct bcode *bcode, FILE *fp, size_t lvl)
 }
 
 void
-bcode_print(const struct bcode *bcode, FILE *fp)
+bcode_print(FILE *fp, const struct bcode *bcode)
 {
-	print_internal(bcode, fp, 0);
+	print_internal(fp, bcode, 0);
 	fputc('\n', fp);
 }
