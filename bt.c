@@ -15,8 +15,11 @@
  */
 
 #include <err.h>
+#include <errno.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "bt.h"
 
@@ -24,23 +27,32 @@
 #define GROWTH_FACTOR	1024
 
 
+static void	usage(void);
+static int	do_bcode(int, char *[]);
+static int	do_tracker(int, char *[]);
+
+
 static void
 usage(void)
 {
-	fprintf(stderr, "Usage: %s [torrent-file]\n", getprogname());
+	const char	*p;
+
+	p = getprogname();
+	fprintf(stderr, "Usage:\n"
+	    "\t%s -b [torrent-file]\n"
+	    "\t%s -t tracker\n",
+	    p, p);
 	exit(1);
 }
 
-int
-main(int argc, char *argv[])
+static int
+do_bcode(int argc, char *argv[])
 {
 	struct bcode	*bcode;
 	uint8_t		*buf, *p;
 	FILE		*fp;
 	size_t		 n, bufcap, bufsz;
 
-	argc--;
-	argv++;
 	if (argc > 1)
 		usage();
 
@@ -87,4 +99,86 @@ main(int argc, char *argv[])
 		(void)fclose(fp);
 
 	return 0;
+}
+
+static int
+do_tracker(int argc, char *argv[])
+{
+	struct bttc_ctx		*ctx;
+	const char		*errstr;
+	struct btih		*btih;
+	struct btt_scrape_stats	*stats;
+	int			 i;
+
+	if (argc < 2)
+		usage();
+
+	ctx = bttc_ctx_new(argv[0]);
+	if (ctx == NULL)
+		err(1, "out of memory");
+
+	argc--;
+	argv++;
+
+	btih = reallocarray(NULL, argc, sizeof(*btih));
+	stats = reallocarray(NULL, argc, sizeof(*stats));
+	if (btih == NULL || stats == NULL)
+		err(1, "out of memory");
+
+	for (i = 0; i < argc; i++)
+		if (!btih_parse(&btih[i], argv[i]))
+			errx(1, "invalid info hash: %s", argv[i]);
+
+	errno = 0;
+	if (!bttc_scrape(ctx, stats, btih, argc, &errstr)) {
+		if (errno)
+			err(1, "announce failed: %s: %s",
+			    bttc_get_tracker(ctx), errstr);
+		else
+			errx(1, "announce failed: %s: %s",
+			    bttc_get_tracker(ctx), errstr);
+	}
+
+	for (i = 0; i < argc; i++)
+		printf("%s\t%" PRIu32 "\t%" PRIu32 "\t%" PRIu32 "\n",
+		    argv[i], stats[i].seeders, stats[i].completed,
+		    stats[i].leechers);
+	free(btih);
+	free(stats);
+
+	return 0;
+}
+
+int
+main(int argc, char *argv[])
+{
+	int	ch, bflag, tflag;
+
+	bflag = tflag = 0;
+	while ((ch = getopt(argc, argv, "bt")) != -1) {
+		switch (ch) {
+		case 'b':
+			bflag = 1;
+			break;
+		case 't':
+			tflag = 1;
+			break;
+		default:
+			usage();
+		}
+	}
+	argc -= optind;
+	argv += optind;
+
+	if (bflag && tflag)
+		errx(1, "-b and -t are mutually exclusive");
+	if (!bflag && !tflag)
+		usage();
+	if (bflag)
+		return do_bcode(argc, argv);
+	else if (tflag)
+		return do_tracker(argc, argv);
+
+	/* UNREACHABLE */
+	return 1;
 }
