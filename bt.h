@@ -19,11 +19,31 @@
 
 
 /*
+ * CONSTANTS
+ */
+
+
+#define BTIH_LEN	20
+
+
+/*
  * STRUCTS
  */
 
 
 struct bcode;
+
+struct bttc_ctx;
+
+struct btt_scrape_stats {
+	uint32_t	seeders;
+	uint32_t	completed;
+	uint32_t	leechers;
+};
+
+struct btih {
+	uint8_t	hash[BTIH_LEN];
+} __packed;
 
 
 /*
@@ -36,3 +56,19 @@ struct bcode;
 struct bcode	*bcode_parse(const uint8_t *, size_t);
 void		 bcode_free(struct bcode *);
 void		 bcode_print(FILE *, const struct bcode *);
+
+
+/* Tracker client */
+
+struct bttc_ctx	*bttc_ctx_new(const char *);
+void		 bttc_ctx_free(struct bttc_ctx *);
+const char	*bttc_get_tracker(const struct bttc_ctx *);
+int		 bttc_announce(struct bttc_ctx *, const uint8_t *,
+		    const char **);
+int		 bttc_scrape(struct bttc_ctx *, struct btt_scrape_stats *,
+		    const struct btih *, size_t, const char **);
+
+
+/* Utilities */
+
+int	btih_parse(struct btih *, const char *);

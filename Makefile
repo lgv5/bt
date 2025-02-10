@@ -1,7 +1,7 @@
 PROG=	bt
 NOMAN=	noman
 
-SRCS=	bt.c bcode.c
+SRCS=	bt.c bcode.c tracker.c util.c
 
 WARNINGS=	Yes
 
